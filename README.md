@@ -1,360 +1,186 @@
 <div align="center">
 
-# 🏭 Wanna Know — 현장 컨베이어 문제 해결 챗봇
+# 🏭 Wanna Know — 컨베이어 매뉴얼 RAG 챗봇
 
 <p>
-  <img src="https://raw.githubusercontent.com/WannaKnowHD/.github/main/profile/assets/logo.png" alt="기술사양서가 알고싶다" width="320">
+  <img src="https://raw.githubusercontent.com/WannaKnowHD/.github/main/profile/assets/logo.png" alt="기술사양서가 알고싶다" width="280">
 </p>
 
-**매뉴얼 PDF를 근거로, 컨베이어 장애 조치를 출처 쪽수와 함께 안내하는 RAG 챗봇**
+**제조사 매뉴얼 PDF를 근거로, 컨베이어 장애의 원인·조치를 출처 쪽수와 함께 답하는 RAG 챗봇**
+
+6인 팀 프로젝트 · 2026.10.22 ~ 11.02 · 이 저장소는 팀 저장소 [WannaKnowHD/wanna_know](https://github.com/WannaKnowHD/wanna_know)의 포크입니다.
+
+[![시연 영상](https://img.shields.io/badge/▶_시연_영상-YouTube-FF0000?logo=youtube&logoColor=white)](https://www.youtube.com/watch?v=KxTcteps2Xo)
+[![원본 저장소](https://img.shields.io/badge/원본_저장소-WannaKnowHD%2Fwanna__know-181717?logo=github&logoColor=white)](https://github.com/WannaKnowHD/wanna_know)
+
+**저(김민재)는 지식베이스(KB) 설계·구축, 사진 입력(명판·손상), 평가 자동 채점을 맡았습니다.**
 
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
 ![Gradio](https://img.shields.io/badge/Gradio-6.x-F97316?logo=gradio&logoColor=white)
 ![OpenAI](https://img.shields.io/badge/OpenAI-GPT%20%2B%20Embeddings-412991?logo=openai&logoColor=white)
 ![ChromaDB](https://img.shields.io/badge/ChromaDB-Vector%20DB-FF6F61)
-![MySQL](https://img.shields.io/badge/MySQL-Aiven-4479A1?logo=mysql&logoColor=white)
+![Pydantic](https://img.shields.io/badge/Pydantic-v2-E92063?logo=pydantic&logoColor=white)
 ![pytest](https://img.shields.io/badge/tested%20with-pytest-0A9EDC?logo=pytest&logoColor=white)
-[![Main Branch Check](https://github.com/WannaKnowHD/wanna_know/actions/workflows/main-branch-check.yml/badge.svg)](https://github.com/WannaKnowHD/wanna_know/actions/workflows/main-branch-check.yml)
 
 </div>
-
-<!-- TODO: 시연 화면 캡처(로그인·채팅·관리자 대시보드)를 assets/ 에 넣고 여기에 연결 -->
 
 ## 목차
 
-<div align="center">
+[시연 영상](#시연-영상) · [프로젝트 한눈에 보기](#프로젝트-한눈에-보기) · [내가 맡은 부분](#내가-맡은-부분) · [주요 작업과 문제 해결](#주요-작업과-문제-해결) · [결과](#결과) · [실행 방법](#실행-방법) · [배운 점](#배운-점) · [팀](#팀)
 
-[주요 기능](#주요-기능) -> [동작 구조](#동작-구조) -> [빠른 시작](#빠른-시작) -> [환경변수](#환경변수) -> [평가 방법](#평가-방법) -> [테스트](#테스트) -> [폴더 구조](#폴더-구조) -> [개발 규칙](#개발-규칙) -> [문제 해결](#문제-해결) -> [담당](#담당)
+## 시연 영상
 
-</div>
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=KxTcteps2Xo">
+    <img src="https://img.youtube.com/vi/KxTcteps2Xo/hqdefault.jpg" alt="Wanna Know 시연 영상" width="640">
+  </a>
+  <br><sub>이미지를 누르면 YouTube에서 재생됩니다.</sub>
+</p>
 
-## 주요 기능
+## 프로젝트 한눈에 보기
 
-| 기능 | 설명 |
-| --- | --- |
-| 📖 **매뉴얼 근거 답변** | 증상을 말하면 원인·조치를 알려 주고, 답변마다 출처 문서와 쪽수를 붙입니다. |
-| 🔎 **하이브리드 검색** | BM25와 벡터 검색을 합치고 리랭커로 다시 순위를 매겨 상위 5개를 근거로 씁니다. |
-| 🛡️ **근거 검증** | LLM 답을 화면에 내보내기 전에 원인 ID·조치 개수·인용문이 검색된 자료와 맞는지 코드로 다시 확인합니다. |
-| ⚠️ **안전 문구 자동 첨부** | 정비·조정 답변에는 `data/safety_rules.json`의 문구를 반드시 붙입니다. LLM이 만든 문구는 쓰지 않습니다. |
-| 🙅 **모르면 모른다고 답변** | 매뉴얼에 없는 질문은 지어내지 않고 "확인되지 않음"으로 처리합니다. |
-| 📷 **사진 입력** | 설비 명판으로 모델을 인식하고, 벨트 손상 사진은 손상 유형을 분류해 KB와 연결합니다. |
-| 🧑‍💼 **로그인·대화 기록** | 사원번호 로그인, 사용자별 설비 필터·대화 기록(MySQL)을 지원합니다. |
-| 📊 **관리자 대시보드** | 운영 현황, 답변 품질 검토, KB 현황(문서 추가), 시스템 상태 4개 탭을 제공합니다. |
+**문제.** 현장 엔지니어가 설비 장애를 해결하려면 영어로 된 제조사 매뉴얼에서 답을 찾아야 합니다. 그런데 답은 표와 그림 안에 있고, Fenner 매뉴얼처럼 증상 표에는 해결책 번호만 있고 실제 해결책은 다른 쪽에 흩어져 있기도 합니다.
 
-## 동작 구조
+**해결.** 매뉴얼의 트러블슈팅 표·점검표를 구조화된 지식베이스로 만들고, 하이브리드 검색으로 근거를 찾은 뒤, LLM이 만든 답이 실제 근거와 맞는지 코드로 다시 검증합니다. 매뉴얼에 없는 내용은 지어내지 않고 "확인되지 않음"으로 답합니다.
 
 ```mermaid
-flowchart TB
-    subgraph IN["입력 · 질문 이해 · 검색"]
-        direction LR
-        Q[질문 / 사진] --> V{사진?}
-        V -- 명판 --> M[모델 인식]
-        V -- 벨트 손상 --> D[손상 유형 분류]
-        V -- 텍스트 --> U
-        M --> U[질문 이해<br/>용어집·설비 필터]
-        D --> U
-        U --> R[하이브리드 검색<br/>BM25 + 벡터 → 리랭커]
-    end
-    subgraph OUT["판정 · 생성 · 검증 · 기록"]
-        direction LR
-        T{기준값 이상?} -- 예 --> G[답변 생성<br/>LLM] --> C[근거 검증<br/>원인·조치·인용문] --> S[안전 문구<br/>첨부] --> A[답변 +<br/>출처 쪽수]
-        T -- 아니오 --> N[확인되지 않음<br/>안내]
-        A --> L[(MySQL<br/>로그)]
-        N --> L
-    end
-    IN --> OUT
+flowchart LR
+    Q[질문 / 사진] --> P{사진?}
+    P -- 명판 --> N[모델 인식<br/>→ 설비 필터]
+    P -- 손상 --> D[손상 유형 → 증상]
+    P -- 텍스트 --> U[질문 이해 · 용어집]
+    N --> U
+    D --> U
+    U --> S[하이브리드 검색<br/>BM25 + 벡터 → 리랭커]
+    S --> G[답변 생성]
+    G --> V[근거 검증<br/>원인 ID · 인용문]
+    V --> A[답변 + 출처 쪽수<br/>+ 안전 문구]
+    KB[(KB 82건<br/>고장 38 · 점검 44)] --> S
+    KB --> V
+
+    classDef mine fill:#0F6B4A,color:#fff,stroke:#0F6B4A
+    class N,D,KB mine
 ```
 
-| 구분 | 사용 기술 |
+<sub>초록색이 제가 맡은 부분입니다. 평가 자동 채점(`eval/run_eval.py`)은 이 흐름 전체를 채점합니다.</sub>
+
+## 내가 맡은 부분
+
+| 영역 | 한 일 | 주요 파일 | PR |
+| --- | --- | --- | --- |
+| **KB 스키마** | 트러블슈팅·점검 KB 형식과 원인 ID 규칙(`kb_id#c1`) 설계, 실제 매뉴얼에 맞게 확장 | `chatbot/core/schemas.py` | [#27](https://github.com/WannaKnowHD/wanna_know/pull/27) [#29](https://github.com/WannaKnowHD/wanna_know/pull/29) |
+| **KB 구축** | 매뉴얼 3종 → KB 82건 변환, 새 PDF의 표 자동 변환 | `chatbot/rag/document_processor.py` (KbBuilder), `scripts/build_kb.py`, `kb/` | [#70](https://github.com/WannaKnowHD/wanna_know/pull/70) |
+| **KB 검증·병합** | 스키마·참조 검사, 여러 모델에 반복되는 같은 표를 1건으로 병합 | `validate_kb`, `merge_applies_to` | [#77](https://github.com/WannaKnowHD/wanna_know/pull/77) |
+| **용어집·설비 목록** | 현장 표현 ↔ 매뉴얼 영문 용어 사전, 설비 모델 목록과 로더 | `data/glossary.csv`, `data/models.csv`, `chatbot/rag/glossary.py` | [#43](https://github.com/WannaKnowHD/wanna_know/pull/43) |
+| **명판 인식** | 명판 사진에서 모델명 판독 → 표기 정규화 → 설비 목록과 매칭 | `chatbot/vision/vision.py` | [#86](https://github.com/WannaKnowHD/wanna_know/pull/86) |
+| **손상 사진 분석** | 손상 유형 분류 → 증상·KB 후보 연결 | `vision.py`, `data/damage_map.csv` | [#91](https://github.com/WannaKnowHD/wanna_know/pull/91) |
+| **사진 첨부 화면** | 사진 판별·재촬영 안내, 사진과 질문을 함께 보내면 둘 다 반영한 답변 | `chatbot/ui/gradio_app.py` (`on_image`) | [#98](https://github.com/WannaKnowHD/wanna_know/pull/98) [#158](https://github.com/WannaKnowHD/wanna_know/pull/158) [#161](https://github.com/WannaKnowHD/wanna_know/pull/161) |
+| **평가 자동 채점** | 평가셋 100문항 자동 채점 (KB·원인·출처·모름 처리·사진) | `eval/run_eval.py` | [#121](https://github.com/WannaKnowHD/wanna_know/pull/121) [#177](https://github.com/WannaKnowHD/wanna_know/pull/177) |
+| **프로젝트 뼈대** | 기능명세서 기준 폴더 구조와 클래스·메소드 뼈대, 명세서 일치 테스트 | `tests/test_spec_conformance.py` | `c96810b` [#4](https://github.com/WannaKnowHD/wanna_know/pull/4) |
+
+## 주요 작업과 문제 해결
+
+### 1. 목데이터로 만든 KB 스키마를 실제 매뉴얼에 맞추기
+
+처음에는 연습용 가상 매뉴얼로 스키마를 정했는데, 실제 매뉴얼 3종을 넣어 보니 맞지 않는 부분이 나왔습니다.
+
+| 실제 매뉴얼에서 발견한 것 | 스키마에 반영한 것 |
 | --- | --- |
-| 화면 | Gradio 6 (로그인 · 채팅 · 관리자 대시보드) |
-| 생성·사진 인식·임베딩 | OpenAI API |
-| 검색 | rank-bm25, ChromaDB, sentence-transformers(bge-reranker-v2-m3) |
-| 문서 처리 | PyMuPDF, tiktoken |
-| 저장소 | MySQL (Aiven) — 계정·세션·대화·로그·KB 공백·문서 목록 |
+| 한 트러블슈팅 표가 그 매뉴얼의 모든 모델에 적용됨 | 모든 모델용 `applies_to: ["*"]` 추가 ([#27](https://github.com/WannaKnowHD/wanna_know/pull/27)) |
+| 점검 주기가 "1,500~3,000시간"처럼 범위로 적힘 (PRECO) | `interval_hours_max` 추가 ([#29](https://github.com/WannaKnowHD/wanna_know/pull/29)) |
+| 같은 표가 여러 모델 매뉴얼에 반복됨 | 같은 표는 1건으로 합치고 적용 모델을 모음 ([#77](https://github.com/WannaKnowHD/wanna_know/pull/77)) |
 
-## 빠른 시작
+원인마다 `kb_id#c1` 형식의 ID를 붙여서, LLM 답변의 원인이 실제 매뉴얼에 있는지 **코드로 검증**하고, 평가에서도 정답 원인을 맞혔는지 **자동으로 채점**할 수 있게 했습니다.
 
-### 준비물
+### 2. 표 모양이 매뉴얼마다 다른 문제
 
-- Python **3.11**
-- OpenAI API 키
-- MySQL(Aiven) 접속 정보와 CA 인증서(`certs/ca.pem`)
-- 매뉴얼 PDF 3개 (저작권 때문에 저장소에 없습니다)
+매뉴얼마다 트러블슈팅 표의 구조가 달랐습니다. Hytrol과 PRECO는 "문제 · 원인 · 해결" 표지만, Fenner는 증상 A~X 옆에 해결책 **번호**만 있고, 번호 1~53의 해결책은 다른 쪽에 따로 있습니다.
 
-> `.env` 값, `ca.pem`, 매뉴얼 PDF는 팀 채널(드라이브)에서 공유받으세요. 모두 커밋 금지입니다.
+- 초기 매뉴얼 3종은 `scripts/build_kb.py`로 구조별 규칙을 적용해 KB **82건(고장 38 · 점검 44)**을 만들었습니다.
+- 관리자가 새 PDF를 올리면 `KbBuilder.from_sections`가 머리글로 표 형식을 알아보고(트러블슈팅 3칸 머리글, 주기 칸에 X 표시가 있는 점검표) 자동 변환합니다.
+- 알아볼 수 없는 표는 **건너뛰고 표 청크로만 검색**되게 해서, 표 하나 때문에 색인 전체가 실패하지 않게 했습니다.
+- KB 문장은 비전 모델이 다시 쓴 글이 아니라 **원문에서** 가져오도록 해서, 인용 검증이 원문과 정확히 맞게 했습니다.
 
-### 1. 설치
+### 3. 사진 입력: 명판과 손상 사진
+
+- **명판**: 판독한 모델명을 정규화(대문자로 바꾸고 공백·하이픈·점 제거, 예: `138 ACC` → `138ACC`)한 뒤 설비 목록과 맞춥니다. 일치하면 그 설비의 매뉴얼만 검색하도록 설비 필터를 걸고, **한 글자만 다르면 확인 질문**을 하고, 목록에 없으면 안내합니다. 모델명 한 글자 차이로 다른 설비의 값을 안내하지 않기 위해서입니다.
+- **손상 사진**: 손상 유형을 분류하고 `damage_map.csv`로 증상과 KB 후보에 연결해, 텍스트 질문과 같은 검색 흐름을 탑니다.
+- **재촬영 판단 기준 변경**: 재촬영 여부를 모델이 낸 확신도 대신 사진 판별 결과(명판·손상이 아닌 "기타")로 정하도록 바꾸고, 확신도는 기록용으로만 남겼습니다 ([#158](https://github.com/WannaKnowHD/wanna_know/pull/158), [#161](https://github.com/WannaKnowHD/wanna_know/pull/161)).
+- **사진 + 질문 함께 보내기**: 사진만 보냈을 때와 사진에 질문을 붙였을 때를 모두 처리해 답변 카드 하나로 보여 줍니다 ([#161](https://github.com/WannaKnowHD/wanna_know/pull/161)).
+
+### 4. 평가를 자동화해서 버전별로 비교하기
+
+평가셋 100문항을 한 번에 돌려 KB Top-1·Recall@5, 원인 재현율·정밀도, 출처 정확도, 모름 처리율, 과잉 거절률, 안전 문구 포함률, 사진 정답률을 계산하는 `run_eval.py`를 만들었습니다 ([#121](https://github.com/WannaKnowHD/wanna_know/pull/121)). 팀은 이 채점 결과로 v0~v3를 비교하며 "한 번에 하나씩 바꾸고 측정"하는 방식으로 개선했습니다.
+
+## 결과
+
+팀 최종 버전(v3) 기준, 평가셋 100문항 (2026-10-30)
+
+| 지표 | v0 | v3 |
+| --- | ---: | ---: |
+| KB Top-1 정확도 | 67.6% | **85.7%** |
+| KB Recall@5 | 87.8% | **93.9%** |
+| 원인 재현율 · 정밀도 | 83.7% · 96.4% | **86.0% · 94.8%** |
+| 출처 정확도 | 76.1% | **79.2%** |
+| 모름 처리율 · 안전 문구 포함률 | 100% · 100% | **100% · 100%** |
+| 과잉 거절률 (낮을수록 좋음) | 19.7% | **14.5%** |
+| 사진 입력 정답률 (10문항) | 40.0% | **90.0%** |
+| 명판 인식 정확도 (합성 명판 20장) | - | **90.0%** |
+| 응답 시간 p95 · 텍스트 | 43.6초 | **23.6초** |
+
+13개 지표 중 7개가 목표를 달성했고, 출처 정확도·과잉 거절률·사진 응답 시간 등은 남은 과제입니다. 버전별 상세 결과와 지표 정의는 [팀 저장소 README](https://github.com/WannaKnowHD/wanna_know#평가-방법)에 있습니다.
+
+## 실행 방법
+
+<details>
+<summary>펼쳐 보기</summary>
+
+**준비물**: Python 3.11, OpenAI API 키, MySQL(Aiven) 접속 정보와 `certs/ca.pem`, 매뉴얼 PDF 3종(저작권 때문에 저장소에 없음)
 
 ```bash
-git clone https://github.com/WannaKnowHD/wanna_know.git
+git clone https://github.com/wintery7/wanna_know.git
 cd wanna_know
 python -m venv .venv
-```
-
-```bash
-# macOS / Linux
-source .venv/bin/activate
-# Windows (PowerShell)
-.venv\Scripts\Activate.ps1
-```
-
-```bash
+source .venv/bin/activate          # Windows: .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+cp .env.example .env               # 값 채우기
 ```
-
-### 2. 설정
 
 ```bash
-cp .env.example .env      # Windows: copy .env.example .env
+python scripts/seed.py             # 테이블 · 계정 · 데모 로그
+python build_index.py              # 매뉴얼 PDF를 data/raw/initial/ 에 넣은 뒤 색인 생성
+python app.py                      # http://127.0.0.1:7860
 ```
-
-`.env`의 빈 값을 채우고 `certs/ca.pem`을 넣습니다. 항목 설명은 [환경변수](#환경변수)를 보세요.
-
-```bash
-python chatbot/core/config.py    # 설정이 모두 채워졌는지 확인 ([OK])
-python scripts/test_db.py        # DB 접속 확인 (읽기만 함)
-```
-
-### 3. DB 준비
-
-테이블을 만들고 계정과 데모 로그를 넣습니다. 여러 번 실행해도 안전합니다.
-
-```bash
-python scripts/seed.py              # 테이블 + 계정 + 데모 로그
-python scripts/seed.py --no-demo    # 테이블 + 계정만
-```
-
-| 사원번호 | 역할 | 비밀번호 |
-| --- | --- | --- |
-| `A0001` | 관리자 | `.env`의 `SEED_ADMIN_PASSWORD` |
-| `E0001` | 일반 사원 | `.env`의 `SEED_USER_PASSWORD` |
-| `D0001` | 데모 사원 (데모 로그 전용) | `.env`의 `SEED_USER_PASSWORD` |
-
-### 4. 색인 만들기
-
-매뉴얼 PDF 3개를 `data/raw/initial/`에 넣습니다.
-
-| 문서 | 파일 이름 |
-| --- | --- |
-| Hytrol 138 시리즈 | `hytrol_138acc_p1-27.pdf` |
-| Fenner Dunlop 벨트 | `Fenner-Dunlop-Conveyor-Belt-Manual-21-39.pdf` |
-| PRECO L 시리즈 | `preco_l_series_p6-29_54-60.pdf` |
-
-```bash
-python build_index.py    # KB·색인 전체 재생성 → chroma_db/ (OpenAI 임베딩 호출)
-```
-
-> `kb/`의 KB JSON은 저장소에 이미 들어 있습니다. 매뉴얼의 표 내용을 바꿨을 때만 `python scripts/build_kb.py`로 다시 만듭니다.
-
-### 5. 실행
-
-```bash
-python app.py
-```
-
-브라우저에서 터미널에 표시된 주소(기본 http://127.0.0.1:7860)를 엽니다. 처음에는 리랭커 모델을 불러오느라 시작이 조금 걸립니다.
-
-> 색인이 없거나 키가 틀리면 로그인·관리자 화면은 열리지만 질문에는 "사용할 수 없음" 안내만 나옵니다. 터미널의 `[app]` 로그에서 원인을 확인하세요.
-
-### 명령 모음
-
-모든 명령은 프로젝트 루트에서 실행합니다.
 
 | 명령 | 하는 일 |
 | --- | --- |
-| `python app.py` | 챗봇 실행 |
-| `python build_index.py` | KB·색인 전체 재생성 |
 | `python scripts/build_kb.py` | 매뉴얼 표 → `kb/*.json` 재생성 |
-| `python scripts/seed.py` | 테이블·계정·데모 로그 등록 |
-| `python scripts/test_db.py` | DB 접속·테이블·계정 점검 |
-| `python eval/run_eval.py` | 평가셋 자동 채점 |
+| `python eval/run_eval.py` | 평가셋 자동 채점 (`--set dev`, `--input photo`, `--limit N`) |
+| `python eval/run_nameplate_eval.py --run` | 명판 인식 정확도 평가 |
 | `pytest` | 단위 테스트 + 기능명세서 일치 확인 |
 
-## 환경변수
+환경변수와 자세한 설치 과정은 [팀 저장소 README](https://github.com/WannaKnowHD/wanna_know#빠른-시작)를 참고해 주세요.
 
-`.env.example`을 복사해 `.env`로 저장합니다. 비밀값은 팀 채널에서 공유받습니다.
+</details>
 
-| 이름 | 용도 | 기본값·예시 |
-| --- | --- | --- |
-| `OPENAI_API_KEY` | OpenAI API 키 | 팀 공유 |
-| `MODEL_TEXT` | 답변 생성 모델 | 팀 공유 |
-| `MODEL_VISION` | 사진 인식 모델 | 팀 공유 |
-| `EMBEDDING_MODEL` | 임베딩 모델 | `text-embedding-3-small` |
-| `DB_HOST` · `DB_PORT` · `DB_USER` · `DB_PASSWORD` | MySQL 접속 정보 | 팀 공유 |
-| `DB_NAME` | 붙을 데이터베이스 이름 (코드에는 DB 이름이 없음) | 연습용 `test` → 실제 DB 이름 |
-| `DB_SSL_CA` | CA 인증서 경로 | `certs/ca.pem` |
-| `BROWSER_STORAGE_KEY` | 로그인 세션 저장 키 | `cv_session` |
-| `BROWSER_SECRET` | 세션 암호화 값. **고정값**이어야 서버를 다시 켜도 로그인이 유지됨 | 팀 공유 |
-| `SESSION_HOURS` | 로그인 유지 시간 | `8` |
-| `NOT_FOUND_THRESHOLD` | 이 점수 미만이면 "확인되지 않음" 처리 | `0.55` |
-| `IMAGE_CONFIDENCE_THRESHOLD` | 사진 인식 확신도 기준 (미만이면 재촬영 요청) | `0.6` |
-| `SEED_ADMIN_PASSWORD` · `SEED_USER_PASSWORD` | `seed.py`가 만들 계정 비밀번호 (8자 이상) | 직접 정함 |
+## 배운 점
 
-> `DB_NAME=test`는 연습용입니다. 여기에 만든 계정·기록은 실제 DB로 옮겨지지 않습니다. 실제 DB로 바꾼 뒤에는 `python scripts/seed.py`를 다시 실행하세요.
+- **설계는 실제 데이터로 빨리 검증해야 한다.** 목데이터로 정한 KB 스키마가 실제 매뉴얼에서 바로 맞지 않았습니다. 매뉴얼 한 권으로 추출부터 답변까지 먼저 끝까지 돌려 봤다면 더 일찍 찾을 수 있었습니다.
+- **LLM 결과는 구조로 검증할 수 있게 만들어야 한다.** 원인에 ID를 붙이니 "지어낸 원인"을 코드로 걸러 내고, 평가도 사람 손 없이 반복할 수 있었습니다.
+- **"완료"의 기준은 사용자가 결과를 보는 것이다.** 기능이 돌아가는 것과 화면에서 기대한 답이 나오는 것은 달랐고, 그 차이를 평가 자동화로 좁힐 수 있었습니다.
+- **팀 작업에서는 문서와 코드의 기준을 하나로 정해야 한다.** WBS·명세서·코드가 따로 바뀌며 생긴 불일치를 여러 번 맞추면서, 기준 문서와 변경 규칙의 중요성을 배웠습니다.
 
-## 평가 방법
-
-`eval/`에 평가 데이터와 채점 스크립트가 있습니다.
-
-| 데이터 | 문항 수 | 용도 |
-| --- | --- | --- |
-| `eval/testset.jsonl` | 100 (텍스트 + 사진) | 최종 평가. **튜닝에 쓰지 않습니다.** |
-| `eval/devset.jsonl` | 17 | 검색 기준값 등 조정용 |
-| `eval/images/` | 명판·벨트 손상·기타 사진 | 사진 문항과 사진 평가 |
-
-### 실행
-
-```bash
-python eval/run_eval.py                                  # 평가셋 전체
-python eval/run_eval.py --set dev                        # 개발셋
-python eval/run_eval.py --version v2 --no-log            # 결과 파일 이름 지정, DB 로그 안 남김
-python eval/run_eval.py --limit 5 --input text           # 앞 5문항, 텍스트만
-```
-
-| 옵션 | 설명 |
-| --- | --- |
-| `--set test\|dev` | 평가셋(기본) 또는 개발셋 |
-| `--version` | 결과 파일 이름 앞부분 (예: `v0`, `v1`, 기본 `current`) |
-| `--limit N` | 앞에서 N문항만 실행 |
-| `--input all\|text\|photo` | 입력 종류 선택 |
-| `--no-log` | DB `chat_logs`에 남기지 않음 |
-
-| 스크립트 | 하는 일 |
-| --- | --- |
-| `eval/run_image_eval.py [--run] [--limit N] [--label ...]` | 사진 분류(명판·벨트 손상·기타) 평가 |
-| `eval/run_nameplate_eval.py [--run] [--limit N]` | 명판 모델명 인식 정확도 평가 |
-| `eval/search_report.py [--use-question]` | 리랭킹 전후 비교, 기준값 후보별 거절률 |
-| `eval/try_search.py "질문" [--model L400]` | 질문 하나의 단계별 검색 상위 5개 확인 |
-
-사진 평가 스크립트는 `--run`을 붙여야 실제로 API를 호출합니다. 붙이지 않으면 목록만 보여 줍니다.
-
-### 결과 읽기
-
-결과는 `eval/results/{버전}_{날짜시각}.csv`(지표 요약)와 `..._cases.csv`(문항별)로 저장됩니다.
-
-| 지표 | 뜻 | 좋은 방향 |
-| --- | --- | --- |
-| `kb_top1` · `kb_recall@5` | 정답 KB가 1위 · 상위 5개 안에 든 비율 | 높을수록 |
-| `cause_recall` · `cause_precision` | 정답 원인을 찾은 비율 · 답한 원인이 맞은 비율 | 높을수록 |
-| `source_page` · `source_doc` | 출처 쪽 · 문서가 정답과 일치한 비율 | 높을수록 |
-| `abstain_ok` | 매뉴얼에 없는 질문을 "확인되지 않음"으로 처리한 비율 | 높을수록 |
-| `over_refusal_rate` | 답할 수 있는 질문을 거절한 비율 | **낮을수록** |
-| `safety_included` | 안전 문구가 필요한 답변에 실제로 붙은 비율 | 높을수록 |
-| `nameplate_ok` | 명판 사진에서 모델을 맞게 인식한 비율 | 높을수록 |
-
-### 버전별 결과 (v0 ~ v3, 평가셋 100문항, 2026-10-30)
-
-목표값은 `v0 + (1 − v0) × 0.5`(개선 비율 50%)로 정했습니다. 안전·정밀도는 고정값, 과잉 거절률·응답 시간은 넘으면 안 되는 상한입니다. 최신은 v3 기준입니다.
-
-| 구분 | 지표 | 방향 | v0 | v1 | v2 | v3 |
-| --- | --- | :---: | ---: | ---: | ---: | ---: |
-| 검색 | Top-1 KB 정확도 | ↑ | 67.6% | 64.8% | 85.7% | 85.7% |
-| 검색 | Recall@5 | ↑ | 87.8% | 87.8% | 93.9% | 93.9% | 
-| 답변 | 원인 재현율 | ↑ | 83.7% | 81.4% | 86.0% | 86.0% | 
-| 답변 | 원인 정밀도 | ↑ | 96.4% | 94.6% | 94.8% | 94.8% | 
-| 출처 | 출처 정확도 (문서·원본 쪽) | ↑ | 76.1% | 76.1% | 79.2% | 79.2% |
-| 신뢰성 | 모름 처리율 | ↑ | 100% | 100% | 100% | 100% | 
-| 신뢰성 | 과잉 거절률 | ↓ | 19.7% | 16.9% | 14.5% | 14.5% |
-| 안전 | 안전 문구 포함률 | ↑ | 100% | 100% | 100% | 100% | 
-| 멀티모달 | 그림 질문 정답률 (10문항) | ↑ | 30.0% | 20.0% | 80.0% | 80.0% | 
-| 사진 | 사진 입력 정답률 (10문항) | ↑ | 40.0% | 50.0% | 50.0% | 90.0% | 
-| 사진 | 명판 인식 정확도 (합성 명판 20장) | ↑ | - | 90.0% | 90.0% | 90.0% | 
-| 속도 | 응답 시간 p95 · 텍스트 | ↓ | 43.6초 | 36.0초 | 23.6초 | 23.6초 | 
-| 속도 | 응답 시간 p95 · 사진 | ↓ | 41.1초 | 34.2초 | 31.0초 | 31.0초 | 
-
-**v3 기준 13개 지표 중 7개 달성.** 남은 과제는 Recall@5·원인 재현율·출처 정확도·과잉 거절률·사진 응답 시간입니다.
-
-| 버전 | 바꾼 것 (한 번에 하나) | 고친 오답 유형 |
-| --- | --- | --- |
-| v0 | 기준 버전: 하이브리드 검색 + 리랭커 + 근거 검증 + 모름 처리 + 설비 필터 + 용어집 + 사진 (10/29 커밋 `f52b7a4`, gpt-4.1) | - |
-| v1 | 속도·답변 형식 안정화: 리랭커 미리 불러오기, 입력 256토큰, 번역 규칙·한국어 재요청, 예시 질문에 "컨베이어" 추가 | 느린 응답, 영어 원인이 한국어 검사에서 탈락, 질문 대상 불분명 |
-| v2 | 모름 처리 기준값 `NOT_FOUND_THRESHOLD` 0.55 → 0.45 (개발셋 17문항으로만 조정) | 답이 있는데 "확인되지 않음"으로 답한 과잉 거절 |
-| v3 | 손상 사진 처리 코드: 후보 KB 연결, 검색 질의 보강, 손상 사진 프롬프트 안내 (`pipeline.py`, `gradio_app.py`) | 손상 사진에 "확인되지 않음" (tc_086~089) |
-
-지표 정의·채점 기준은 팀 드라이브의 평가 지표표(`05. 평가지표표_컨베이어챗봇`)를 따릅니다. 각 실행의 원본 결과는 `eval/results/`에서 확인할 수 있습니다.
-
-## 테스트
-
-```bash
-pytest
-```
-
-- `tests/test_spec_conformance.py`: 코드가 기능명세서와 일치하는지 확인합니다. 명세서(`docs/기능명세서.xlsx`)는 저장소에 없으므로, 드라이브에서 받아 `docs/`에 넣어야 검사하고 없으면 건너뜁니다.
-- `*_live_test.py`: 실제 API·DB가 필요해서 평소에는 건너뜁니다. 환경변수 `LIVE_RAG=1`(Git Bash: `LIVE_RAG=1 python -m pytest tests/pipeline_answer_live_test.py -v -s`)을 주면 실행됩니다.
-
-## 폴더 구조
-
-```
-app.py · build_index.py        실행 파일
-chatbot/
-├─ pipeline.py                 질문 처리 파이프라인 (검색 → 생성 → 검증)
-├─ ui/
-│  ├─ gradio_app.py            화면 전환 (로그인 / 채팅 / 관리자)
-│  ├─ login/                   로그인 화면
-│  ├─ chat/                    채팅 화면 (사이드바·메시지·입력)
-│  ├─ admin/                   관리자 탭 (운영 현황·답변 품질·KB 현황·시스템)
-│  └─ dashboard.py             관리자 대시보드 조립
-├─ rag/                        문서 처리·색인·검색·생성·검증·용어집
-├─ vision/                     사진 처리 (명판·벨트 손상)
-├─ core/                       설정, 로그인·세션, 대화 상태, 안전 문구, 로그, 공통 데이터 클래스
-└─ db/                         MySQL 연결, 테이블 정의(schema.sql)
-data/                          원본 PDF(커밋 안 함), 용어집·모델 목록·안전 규칙 등
-kb/                            KbBuilder가 만든 KB JSON
-chroma_db/                     벡터·BM25 색인 (커밋 안 함, build_index.py가 생성)
-eval/                          평가 스크립트·평가셋·결과
-scripts/                       seed.py · test_db.py · build_kb.py
-tests/                         단위 테스트·명세서 일치 테스트
-```
-
-## 개발 규칙
-
-- 사용자별 값(로그인 사원, 설비 필터, 대화 맥락)은 **전역 변수에 두지 않고** `gr.State`로 넘깁니다.
-- 관리자 함수는 화면에서 숨겨도 API로 호출될 수 있으므로, **함수 안에서 `user.is_admin`을 확인**합니다.
-- `.env`, `certs/`, `data/raw/`, `chroma_db/`는 커밋하지 않습니다.
-- 기능명세서를 바꾸면 `docs/기능명세서.xlsx`와 `docs/기능명세서.md`를 함께 갱신하고 `pytest`로 확인합니다. (`docs/`는 저장소에 없고 각자 로컬에 둡니다.)
-- WBS(진행 상태)는 구글 드라이브에서만 관리합니다. 저장소에는 두지 않습니다.
-
-### 브랜치와 커밋
-
-- 작업은 `feat/*` · `fix/*` · `docs/*` 브랜치에서 하고, **`dev`로 PR**을 보냅니다.
-- `main`에는 `dev`만 병합할 수 있습니다. 다른 브랜치에서 PR을 보내면 CI(Main Branch Check)가 실패합니다.
-- 커밋 메시지는 `feat:`, `fix:`, `chore:`, `docs:` 같은 접두어로 시작합니다.
-
-## 문제 해결
-
-| 증상 | 확인할 것 |
-| --- | --- |
-| 질문하면 "사용할 수 없음" 안내만 나온다 | 터미널의 `[app] 질문 처리 파이프라인을 만들지 못했습니다` 뒤 원인을 봅니다. 대개 `build_index.py`를 안 돌렸거나 `OPENAI_API_KEY`가 비어 있습니다. |
-| 시작할 때 DB 오류로 멈춘다 | `python scripts/test_db.py`로 접속·SSL을 확인합니다. `certs/ca.pem`이 있는지, Aiven 서비스가 켜져 있는지 확인합니다. |
-| 로그인이 서버를 껐다 켜면 풀린다 | `.env`의 `BROWSER_SECRET`이 비어 있거나 바뀌었습니다. 고정값으로 두세요. |
-| 첫 질문이 느리다 | 리랭커 모델을 불러오는 시간입니다. 앱은 시작할 때 미리 불러옵니다. 첫 실행은 모델 다운로드로 더 걸립니다. |
-| 답변이 자꾸 "확인되지 않음"이다 | `NOT_FOUND_THRESHOLD`가 높지 않은지, 설비 필터가 질문과 맞는지 확인합니다. `python eval/try_search.py "질문"`으로 검색 결과를 볼 수 있습니다. |
-| 연습용 DB(`test`)에 붙었다는 경고가 나온다 | `.env`의 `DB_NAME`을 실제 DB 이름으로 바꾸고 `python scripts/seed.py`를 다시 실행합니다. |
-
-## 담당
+## 팀
 
 <table>
   <tr>
-    <td align="center"><a href="https://github.com/seram2002-wq"><img src="https://github.com/seram2002-wq.png" width="96" alt="박세람"><br><b>박세람</b></a><br>팀장</td>
-    <td align="center"><a href="https://github.com/Rose-Rosie-Rose"><img src="https://github.com/Rose-Rosie-Rose.png" width="96" alt="강경원"><br><b>강경원</b></a><br>Repo Owner</td>
-    <td align="center"><a href="https://github.com/wintery7"><img src="https://github.com/wintery7.png" width="96" alt="김민재"><br><b>김민재</b></a><br>팀원</td>
-    <td align="center"><a href="https://github.com/clipnpaper"><img src="https://github.com/clipnpaper.png" width="96" alt="김현준"><br><b>김현준</b></a><br>팀원</td>
-    <td align="center"><a href="https://github.com/daui1727"><img src="https://github.com/daui1727.png" width="96" alt="이정빈"><br><b>이정빈</b></a><br>팀원</td>
-    <td align="center"><a href="https://github.com/Y1OO5B"><img src="https://github.com/Y1OO5B.png" width="96" alt="조윤빈"><br><b>조윤빈</b></a><br>팀원</td>
+    <td align="center"><a href="https://github.com/seram2002-wq"><img src="https://github.com/seram2002-wq.png" width="80" alt="박세람"><br><b>박세람</b></a><br>팀장 · PM · 통합</td>
+    <td align="center"><a href="https://github.com/Rose-Rosie-Rose"><img src="https://github.com/Rose-Rosie-Rose.png" width="80" alt="강경원"><br><b>강경원</b></a><br>Repo Owner</td>
+    <td align="center"><a href="https://github.com/wintery7"><img src="https://github.com/wintery7.png" width="80" alt="김민재"><br><b>김민재</b></a><br>KB · 사진 · 평가</td>
+    <td align="center"><a href="https://github.com/clipnpaper"><img src="https://github.com/clipnpaper.png" width="80" alt="김현준"><br><b>김현준</b></a><br>팀원</td>
+    <td align="center"><a href="https://github.com/daui1727"><img src="https://github.com/daui1727.png" width="80" alt="이정빈"><br><b>이정빈</b></a><br>팀원</td>
+    <td align="center"><a href="https://github.com/Y1OO5B"><img src="https://github.com/Y1OO5B.png" width="80" alt="조윤빈"><br><b>조윤빈</b></a><br>팀원</td>
   </tr>
 </table>
 
-| 역할 | 주요 업무 |
-| --- | --- |
-| PM · 통합 | 일정 · 이슈 관리, 기능 통합, 웹 UI, 발표 자료 |
-| 데이터 · KB | 매뉴얼 전처리, 트러블슈팅 · 점검 KB, 한·영 용어집 |
-| 검색 | 청킹 · 색인, 하이브리드 검색 · 리랭킹, 설비 필터 |
-| 생성 · 검증 | 답변 생성, 근거 검증, 안전 문구 규칙, 대화 상태 |
-| 멀티모달 | 명판 판독, 손상 사진 분석, 음성 입력 |
-| 평가 | 평가셋 · 자동 채점, 버전별 성능 비교 |
-
-## 참고
-
-- 매뉴얼 PDF(Hytrol, Fenner Dunlop, PRECO)의 저작권은 각 제조사에 있으며 저장소에 포함하지 않습니다.
-- 시연용 모듈러 벨트 문서(`mb200`)는 관리자 화면의 "KB 현황"에서 PDF를 추가하는 시연에 씁니다.
+전체 코드와 팀원별 작업은 [WannaKnowHD/wanna_know](https://github.com/WannaKnowHD/wanna_know)에서 볼 수 있습니다.
